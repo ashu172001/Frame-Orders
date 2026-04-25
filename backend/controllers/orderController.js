@@ -1,26 +1,4 @@
-import fs from "fs/promises";
-import path from "path";
-
-const DATA_FILE = path.resolve("data.json");
-
-// Helper to initialize or read DB
-async function getOrders() {
-  try {
-    const data = await fs.readFile(DATA_FILE, "utf-8");
-    return JSON.parse(data);
-  } catch (err) {
-    if (err.code === "ENOENT") {
-      await fs.writeFile(DATA_FILE, JSON.stringify([]));
-      return [];
-    }
-    throw err;
-  }
-}
-
-// Helper to save DB
-async function saveOrders(orders) {
-  await fs.writeFile(DATA_FILE, JSON.stringify(orders, null, 2));
-}
+import Order from "../models/Order.js";
 
 function getMonthName(date) {
   const d = new Date(date);
@@ -39,26 +17,31 @@ export const createOrder = async (req, res) => {
     const advanceVal = Number(advance) || 0;
     const priceVal = Number(price) || 0;
     
-    const newOrder = {
-      _id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    const paymentHistory = [];
+    if (advanceVal > 0) {
+      paymentHistory.push({
+        date: new Date().toISOString().split("T")[0],
+        amount: advanceVal
+      });
+    }
+    
+    const balance = ((Number(quantity) || 1) * priceVal) - advanceVal;
+
+    const newOrder = await Order.create({
       customerName,
       phone: phone || "",
       frameSize,
       quantity,
       price: priceVal,
       advance: advanceVal,
-      balance: ((Number(quantity) || 1) * priceVal) - advanceVal,
-      isPaid: false,
+      balance: balance,
+      isPaid: balance <= 0,
       date,
       month,
-      createdAt: new Date().toISOString()
-    };
+      paymentHistory
+    });
 
-    const orders = await getOrders();
-    orders.push(newOrder);
-    await saveOrders(orders);
-
-    res.status(201).json({ ...newOrder, id: newOrder._id });
+    res.status(201).json(newOrder);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -67,15 +50,12 @@ export const createOrder = async (req, res) => {
 // Get all
 export const getAllOrders = async (req, res) => {
   try {
-    const orders = await getOrders();
-    
-    // sort desc by createdAt
-    orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    const orders = await Order.find().sort({ createdAt: -1 });
 
     const grouped = {};
     orders.forEach((o) => {
       if (!grouped[o.month]) grouped[o.month] = [];
-      grouped[o.month].push({ ...o, id: o._id });
+      grouped[o.month].push(o);
     });
 
     res.json(grouped);
@@ -87,10 +67,7 @@ export const getAllOrders = async (req, res) => {
 // Delete
 export const deleteOrder = async (req, res) => {
   try {
-    let orders = await getOrders();
-    orders = orders.filter(o => o._id !== req.params.id);
-    await saveOrders(orders);
-    
+    await Order.findByIdAndDelete(req.params.id);
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -103,20 +80,41 @@ export const updateOrder = async (req, res) => {
     const update = { ...req.body };
     if (update.date) update.month = getMonthName(update.date);
 
-    let orders = await getOrders();
-    const index = orders.findIndex(o => o._id === req.params.id);
+    const currentOrder = await Order.findById(req.params.id);
     
-    if (index === -1) {
+    if (!currentOrder) {
       return res.status(404).json({ error: "Order not found" });
     }
     
-    orders[index] = { ...orders[index], ...update };
-    orders[index].balance = ((Number(orders[index].quantity) || 1) * (Number(orders[index].price) || 0)) - (Number(orders[index].advance) || 0);
+    // Handle partial payment addition
+    if (update.addPayment) {
+      const paymentAmount = Number(update.addPayment);
+      if (paymentAmount > 0) {
+        currentOrder.paymentHistory.push({
+          date: new Date().toISOString().split("T")[0],
+          amount: paymentAmount
+        });
+        currentOrder.advance = (Number(currentOrder.advance) || 0) + paymentAmount;
+      }
+      delete update.addPayment; // Remove from generic update
+    }
 
-    await saveOrders(orders);
+    // Apply other updates
+    Object.assign(currentOrder, update);
+    
+    const calculatedBalance = ((Number(currentOrder.quantity) || 1) * (Number(currentOrder.price) || 0)) - (Number(currentOrder.advance) || 0);
+    currentOrder.balance = calculatedBalance;
+    
+    // Automatically mark as paid if balance is 0 or less
+    if (calculatedBalance <= 0) {
+      currentOrder.isPaid = true;
+    }
 
-    res.json({ ...orders[index], id: orders[index]._id });
+    await currentOrder.save();
+
+    res.json(currentOrder);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+

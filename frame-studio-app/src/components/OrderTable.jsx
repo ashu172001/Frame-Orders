@@ -237,6 +237,23 @@ _Thank you for your order!_`;
     fetchOrders();
   };
 
+  // Add Partial Payment
+  const handleAddPayment = async (month, id) => {
+    const amountStr = window.prompt("Enter partial payment amount received today:");
+    if (!amountStr) return;
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+      alert("Invalid amount");
+      return;
+    }
+    await fetch(`${API_BASE}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addPayment: amount }),
+    });
+    fetchOrders();
+  };
+
   // Filter
   const filterOrders = (list) => {
     return list.filter(
@@ -330,7 +347,12 @@ _Thank you for your order!_`;
   const sortedYears = Object.keys(groupedByYear).sort((a, b) => b - a);
 
   const allOrders = Object.values(orders).flat();
-  const overallTotal = allOrders.reduce((s, o) => s + (o.quantity * o.price), 0);
+  const overallTotal = allOrders.reduce((s, o) => {
+    if (o.isPaid || o.balance <= 0) {
+      return s + (o.quantity * o.price);
+    }
+    return s + (Number(o.advance) || 0);
+  }, 0);
   const overallAdvance = allOrders.reduce((s, o) => s + (Number(o.advance) || 0), 0);
   const overallBalance = allOrders.reduce((s, o) => {
     if (o.isPaid) return s;
@@ -343,7 +365,12 @@ _Thank you for your order!_`;
   const filteredDaily = dailyOrders.filter(
     (o) => o.customerName.toLowerCase().includes(searchDailyTerm.toLowerCase())
   );
-  const dailyTotalAmount = filteredDaily.reduce((s, o) => s + (o.quantity * o.price), 0);
+  const dailyTotalAmount = filteredDaily.reduce((s, o) => {
+    if (o.isPaid || o.balance <= 0) {
+      return s + (o.quantity * o.price);
+    }
+    return s + (Number(o.advance) || 0);
+  }, 0);
   const dailyTotalAdvance = filteredDaily.reduce((s, o) => s + (Number(o.advance) || 0), 0);
   const dailyTotalBalance = filteredDaily.reduce((s, o) => {
     if (o.isPaid) return s;
@@ -353,7 +380,12 @@ _Thank you for your order!_`;
 
   const renderMonthSection = (month, monthOrders) => {
     const filtered = filterOrders(monthOrders);
-    const monthTotalAmount = filtered.reduce((s, o) => s + (o.quantity * o.price), 0);
+    const monthTotalAmount = filtered.reduce((s, o) => {
+      if (o.isPaid || o.balance <= 0) {
+        return s + (o.quantity * o.price);
+      }
+      return s + (Number(o.advance) || 0);
+    }, 0);
     const monthTotalAdvance = filtered.reduce((s, o) => s + (Number(o.advance) || 0), 0);
     const monthTotalBalance = filtered.reduce((s, o) => {
       if (o.isPaid) return s;
@@ -485,17 +517,19 @@ _Thank you for your order!_`;
                           Paid
                         </span>
                       ) : (
-                        <div className="unpaid-container">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <input
                             type="number"
                             value={o.balance !== undefined ? o.balance : ((o.quantity * o.price) - (Number(o.advance) || 0))}
                             disabled
+                            style={{ width: '80px' }}
                           />
                           <button
                             type="button"
                             className="mark-paid-btn"
-                            title="Mark as Paid"
+                            title="Mark as Fully Paid"
                             onClick={(e) => { e.stopPropagation(); handleEdit(month, o.id, "isPaid", true); }}
+                            style={{ padding: '6px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '4px', cursor: 'pointer' }}
                           >
                             <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{width: '16px', height: '16px'}}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
@@ -826,17 +860,19 @@ _Thank you for your order!_`;
                           Paid
                         </span>
                       ) : (
-                        <div className="unpaid-container">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <input
                             type="number"
                             value={o.balance !== undefined ? o.balance : ((o.quantity * o.price) - (Number(o.advance) || 0))}
                             disabled
+                            style={{ width: '80px' }}
                           />
                           <button
                             type="button"
                             className="mark-paid-btn"
-                            title="Mark as Paid"
+                            title="Mark as Fully Paid"
                             onClick={(e) => { e.stopPropagation(); handleEdit(o.month, o.id, "isPaid", true); }}
+                            style={{ padding: '6px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '4px', cursor: 'pointer' }}
                           >
                             <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{width: '16px', height: '16px'}}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
