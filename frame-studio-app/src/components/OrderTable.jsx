@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import "./OrderTable.css";
 
-const API_BASE = "http://localhost:5000/api/orders";
+const API_BASE = "https://frame-orders-1.onrender.com/api/orders";
 
 // Predefined Frame Sizes (sorted)
 const FRAME_SIZES = [
