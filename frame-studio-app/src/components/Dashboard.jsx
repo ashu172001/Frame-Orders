@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import "./OrderTable.css";
 
-const API_ORDERS = "http://localhost:5000/api/orders";
-const API_EXPENSES = "http://localhost:5000/api/expenses";
+const API_ORDERS = "https://frame-orders-1.onrender.com/api/orders";
+const API_EXPENSES = "https://frame-orders-1.onrender.com/api/expenses";
 
 const Dashboard = () => {
   const [orders, setOrders] = useState([]);
