@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./OrderTable.css"; // Reuse the same styles
 
-const API_BASE = "http://localhost:5000/api/expenses";
+const API_BASE = "https://frame-orders-1.onrender.com/api/expenses";
 
 const Expenses = () => {
   const [expenses, setExpenses] = useState([]);
