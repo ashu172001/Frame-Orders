@@ -16,14 +16,15 @@ const Dashboard = () => {
           fetch(API_ORDERS),
           fetch(API_EXPENSES)
         ]);
-        
+
         const ordersData = await ordersRes.json();
         const expensesData = await expensesRes.json();
 
-        // Orders API returns grouped by month, so we flat it out
+        // Both APIs return grouped by month, so we flat them out
         const allOrders = Object.values(ordersData).flat();
+        const allExpenses = Object.values(expensesData).flat();
         setOrders(allOrders);
-        setExpenses(expensesData);
+        setExpenses(allExpenses);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       }
@@ -77,7 +78,7 @@ const Dashboard = () => {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split("T")[0];
-    
+
     // Sum cash collected for this date
     const dailySales = orders
       .filter(o => o.date === dateStr)
@@ -87,7 +88,7 @@ const Dashboard = () => {
         }
         return sum + (Number(o.advance) || 0);
       }, 0);
-      
+
     chartData.push({
       date: dateStr.slice(5), // MM-DD
       sales: dailySales
@@ -97,7 +98,7 @@ const Dashboard = () => {
   return (
     <div className="order-table-container">
       <h2>
-        <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{width: '36px', height: '36px', color: '#8b5cf6', marginRight: '10px'}}>
+        <svg fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '36px', height: '36px', color: '#8b5cf6', marginRight: '10px' }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
         </svg>
         Business Analytics Dashboard
@@ -128,11 +129,11 @@ const Dashboard = () => {
       </div>
 
       <div style={{ display: 'flex', gap: '2rem', marginTop: '2rem', flexWrap: 'wrap' }}>
-        
+
         {/* Chart Section */}
         <div className="month-section" style={{ flex: '2', minWidth: '400px', padding: '1.5rem' }}>
           <h3 style={{ marginBottom: '1.5rem', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{width: '20px', height: '20px', color: '#38bdf8'}}>
+            <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px', color: '#38bdf8' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
             </svg>
             Sales (Last 7 Days)
@@ -143,7 +144,7 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
                 <XAxis dataKey="date" stroke="#94a3b8" />
                 <YAxis stroke="#94a3b8" />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
                   itemStyle={{ color: '#38bdf8' }}
                 />
@@ -156,7 +157,7 @@ const Dashboard = () => {
         {/* Best Sellers Section */}
         <div className="month-section" style={{ flex: '1', minWidth: '250px', padding: '1.5rem' }}>
           <h3 style={{ marginBottom: '1.5rem', color: '#fff', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{width: '20px', height: '20px', color: '#f59e0b'}}>
+            <svg fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" style={{ width: '20px', height: '20px', color: '#f59e0b' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
             </svg>
             Best Sellers (Qty)
